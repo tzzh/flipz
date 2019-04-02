@@ -56,9 +56,14 @@ class SensorRecord(private val context: Context) : SensorEventListener {
         val accelerometerCurrent = accelerometerData.getToArray()
         val gyroscopeCurrent = gyroscopeData.getToArray()
         val (freefallStartIndex, freefallEndIndex) = getFreefallIndices(accelerometerCurrent, freefallThreshold)
-        val (popStart, popEnd) = getPopIndices(accelerometerCurrent, freefallStartIndex, freefallEndIndex)
+        val (popStartIndex, popEndIndex) = getPopIndices(accelerometerCurrent, freefallStartIndex, freefallEndIndex)
+        if(popStartIndex == -1 || popEndIndex == -1){
+            return Triple(0F,0F, 0F)
+        }
+        val popStartTs = accelerometerCurrent[popStartIndex].timestamp
+        val popEndTs = accelerometerCurrent[popEndIndex].timestamp
 
-        val rotations = computeRotations(gyroscopeCurrent, popStart, popEnd)
+        val rotations = computeRotations(gyroscopeCurrent, popStartTs, popEndTs)
 
         return rotations
 
@@ -109,16 +114,23 @@ fun getPopIndices(acc: Array<SensorReading>, freefallStartIndex: Int, freefallEn
     return Pair(popStart, popEnd)
 }
 
-fun computeRotations(gyro: Array<SensorReading>, startIndex: Int, endIndex: Int) : Triple<Float, Float, Float>{
+fun computeRotations(gyro: Array<SensorReading>, startTs: Long, endTs: Long) : Triple<Float, Float, Float>{
     var rotX = 0F
     var rotY = 0F
     var rotZ = 0F
-    for(i in startIndex until endIndex){
+    var i = 0
+    var currentTs = Long.MIN_VALUE
+    while(currentTs <= endTs && i < gyro.size){
         val r = gyro[i]
-        val delta = (gyro[i+1].timestamp - r.timestamp)/1e9F
-        rotX += r.x * delta
-        rotY += r.y * delta
-        rotZ += r.z * delta
+        val nextR = gyro[i+1]
+        if(r.timestamp >= startTs){
+            val delta = (nextR.timestamp - r.timestamp)/1e9F
+            rotX += r.x * delta
+            rotY += r.y * delta
+            rotZ += r.z * delta
+        }
+        i += 1
+        currentTs = nextR.timestamp
     }
     return Triple(rotX, rotY, rotZ)
 }

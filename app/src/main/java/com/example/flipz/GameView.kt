@@ -71,6 +71,6 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
 
         paint.color = Color.BLACK
         paint.textSize = 40f
-        canvas.drawText("ts:$lastTs - $lastTrick", 40f, 40f, paint)
+        canvas.drawText("$lastTrick", 40f, 40f, paint)
     }
 }
