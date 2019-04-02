@@ -49,7 +49,7 @@ class SensorRecord(private val context: Context) : SensorEventListener {
         sensorManager.unregisterListener(this)
     }
 
-    fun detectTrick(timestamp: Long): Triple<Float, Float, Float> {
+    fun detectTrick(timestamp: Long): Triple<Double, Double, Double> {
         accelerometerData.clearBefore(timestamp - trickLookbackNs)
         gyroscopeData.clearBefore(timestamp - trickLookbackNs)
 
@@ -58,7 +58,7 @@ class SensorRecord(private val context: Context) : SensorEventListener {
         val (freefallStartIndex, freefallEndIndex) = getFreefallIndices(accelerometerCurrent, freefallThreshold)
         val (popStartIndex, popEndIndex) = getPopIndices(accelerometerCurrent, freefallStartIndex, freefallEndIndex)
         if(popStartIndex == -1 || popEndIndex == -1){
-            return Triple(0F,0F, 0F)
+            return Triple(0.0,0.0, 0.0)
         }
         val popStartTs = accelerometerCurrent[popStartIndex].timestamp
         val popEndTs = accelerometerCurrent[popEndIndex].timestamp
@@ -114,17 +114,17 @@ fun getPopIndices(acc: Array<SensorReading>, freefallStartIndex: Int, freefallEn
     return Pair(popStart, popEnd)
 }
 
-fun computeRotations(gyro: Array<SensorReading>, startTs: Long, endTs: Long) : Triple<Float, Float, Float>{
-    var rotX = 0F
-    var rotY = 0F
-    var rotZ = 0F
+fun computeRotations(gyro: Array<SensorReading>, startTs: Long, endTs: Long) : Triple<Double, Double, Double>{
+    var rotX = 0.0
+    var rotY = 0.0
+    var rotZ = 0.0
     var i = 0
     var currentTs = Long.MIN_VALUE
     while(currentTs <= endTs && i < gyro.size){
         val r = gyro[i]
         val nextR = gyro[i+1]
         if(r.timestamp >= startTs){
-            val delta = (nextR.timestamp - r.timestamp)/1e9F
+            val delta = (nextR.timestamp - r.timestamp)/1e9
             rotX += r.x * delta
             rotY += r.y * delta
             rotZ += r.z * delta

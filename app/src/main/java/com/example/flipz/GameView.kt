@@ -5,14 +5,14 @@ import android.graphics.*
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import SensorRecord
-
+import getTrickDistances
 
 
 class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback {
     private val thread: GameThread
     private val sensorRecord: SensorRecord
 
-    private var lastTrick = "No Trick"
+    private var lastRotation = Triple(0.0, 0.0, 0.0)
     private var lastTs = 0L
 
     init {
@@ -55,9 +55,9 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
 
     fun update() {
         lastTs = System.nanoTime()
-        val (x, y, z) = sensorRecord.detectTrick(lastTs)
-        if( x != 0F && y != 0F && z != 0F) {
-            lastTrick = "x: $x, y: $y, z: $z"
+        val (x,y,z) = sensorRecord.detectTrick(lastTs)
+        if( x != 0.0 && y != 0.0 && z != 0.0) {
+            lastRotation = Triple(x,y,z)
         }
     }
 
@@ -71,6 +71,14 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
 
         paint.color = Color.BLACK
         paint.textSize = 40f
-        canvas.drawText("$lastTrick", 40f, 40f, paint)
+        canvas.drawText("${lastRotation.first}", 40f, 40f, paint)
+        canvas.drawText("${lastRotation.second}", 40f, 80f, paint)
+        canvas.drawText("${lastRotation.third}", 40f, 120f, paint)
+
+        var y = 160F
+        for (d in getTrickDistances(lastRotation)) {
+            canvas.drawText("$d", 40f, y, paint)
+            y += 40
+        }
     }
 }
