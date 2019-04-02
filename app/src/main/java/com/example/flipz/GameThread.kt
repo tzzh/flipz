@@ -7,7 +7,7 @@ import android.view.SurfaceHolder
 class GameThread(private val surfaceHolder: SurfaceHolder, private val gameView: GameView) : Thread() {
 
     private var running: Boolean = false
-    private val updatePeriod = 500L // how often to check for new tricks in ms
+    private val updatePeriod = 250L // how often to check for new tricks in ms
 
     fun setRunning(isRunning: Boolean) {
         this.running = isRunning

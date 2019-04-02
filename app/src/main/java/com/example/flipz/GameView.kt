@@ -4,30 +4,33 @@ import android.content.Context
 import android.graphics.*
 import android.view.SurfaceHolder
 import android.view.SurfaceView
-import android.view.WindowManager
+import SensorRecord
 
 
 
 class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback {
     private val thread: GameThread
-    private val maxX: Int
-    private val maxY: Int
+    private val sensorRecord: SensorRecord
+
+    private var lastTrick = "No Trick"
+    private var lastTs = 0L
 
     init {
-        val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        val size = Point()
-        wm.defaultDisplay.getSize(size)
-        maxX = size.x
-        maxY = size.y
-
 
         holder.addCallback(this)
         thread = GameThread(holder, this)
+
+        sensorRecord = SensorRecord(context)
+    }
+
+    fun pause(){
+        sensorRecord.stopRecording()
     }
 
 
     override fun surfaceCreated(surfaceHolder: SurfaceHolder) {
-        // start the game thread
+        sensorRecord.startRecording()
+
         thread.setRunning(true)
         thread.start()
     }
@@ -51,7 +54,11 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
 
 
     fun update() {
-
+        lastTs = System.nanoTime()
+        val (x, y, z) = sensorRecord.detectTrick(lastTs)
+        if( x != 0F && y != 0F && z != 0F) {
+            lastTrick = "x: $x, y: $y, z: $z"
+        }
     }
 
 
@@ -64,6 +71,6 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
 
         paint.color = Color.BLACK
         paint.textSize = 40f
-        canvas.drawText("Kickflip", maxX/2f, maxY/2f, paint)
+        canvas.drawText("ts:$lastTs - $lastTrick", 40f, 40f, paint)
     }
 }

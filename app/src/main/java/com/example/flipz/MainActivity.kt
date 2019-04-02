@@ -4,25 +4,21 @@ import android.app.Activity
 import android.os.Bundle
 import android.view.Window
 import android.view.WindowManager
-import SensorRecord
-import android.widget.TextView
 
 class MainActivity : Activity() {
 
-    private lateinit var sensorRecord: SensorRecord
+    private lateinit var gameView : GameView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         this.window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
         requestWindowFeature(Window.FEATURE_NO_TITLE)
-        setContentView(GameView(applicationContext))
-        sensorRecord = SensorRecord(applicationContext)
-        //sensorRecord.startRecording()
-
+        gameView = GameView(applicationContext)
+        setContentView(gameView)
     }
 
     override fun onPause() {
         super.onPause()
-        sensorRecord.stopRecording()
+        gameView.pause()
     }
 }
