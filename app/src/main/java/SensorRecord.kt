@@ -1,28 +1,38 @@
 import android.content.Context
-import android.content.IntentSender
 import android.hardware.SensorEventListener
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorManager
-import android.service.autofill.Validators.not
+import android.util.Log
 import java.util.*
+import java.util.concurrent.ConcurrentLinkedQueue
 
 data class SensorReading(val timestamp: Long, val x: Float, val y: Float, val z: Float)
 
-class SensorList : LinkedList<SensorReading>(){
+class SensorList(private val maxSize: Int) : LinkedList<SensorReading>(){
 
     fun add(timestamp: Long, x: Float, y: Float, z: Float): Boolean{
         val reading = SensorReading(timestamp,x,y,z)
+        if(this.size >= maxSize){
+            this.remove()
+        }
         return super.add(reading)
     }
 
-    fun getToArray() : Array<SensorReading> {
-        return this.toTypedArray()
+    fun getAfterTs(minTs: Long) : Array<SensorReading> {
+        val beforeTs = mutableListOf<SensorReading>()
+        val it = listIterator(this.size)
+        while(it.hasPrevious()){
+            val r = it.previous()
+            if(r.timestamp < minTs){
+                break
+            }
+            beforeTs.add(SensorReading(r.timestamp,r.x,r.y,r.z))
+        }
+        beforeTs.reverse()
+        return beforeTs.toTypedArray()
     }
 
-    fun clearBefore(timestamp: Long): Boolean{
-        return this.removeAll{ r -> r.timestamp <= timestamp}
-    }
 }
 
 class SensorRecord(private val context: Context) : SensorEventListener {
@@ -31,8 +41,8 @@ class SensorRecord(private val context: Context) : SensorEventListener {
     private val gyroscopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
     private val accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
-    public val accelerometerData = SensorList()
-    private val gyroscopeData = SensorList()
+     val accelerometerData = SensorList(1000)
+    private val gyroscopeData = SensorList(1000)
 
     private val freefallThreshold = 0.5
     private val trickLookback = 500L // how far to check to detect the trick in ms
@@ -49,23 +59,18 @@ class SensorRecord(private val context: Context) : SensorEventListener {
         sensorManager.unregisterListener(this)
     }
 
-    fun detectTrick(timestamp: Long): Triple<Double, Double, Double> {
-        accelerometerData.clearBefore(timestamp - trickLookbackNs)
-        gyroscopeData.clearBefore(timestamp - trickLookbackNs)
-
-        val accelerometerCurrent = accelerometerData.getToArray()
-        val gyroscopeCurrent = gyroscopeData.getToArray()
+    fun detectTrick(timestamp: Long): Rotation {
+        val accelerometerCurrent = accelerometerData.getAfterTs(timestamp - trickLookbackNs)
+        val gyroscopeCurrent = gyroscopeData.getAfterTs(timestamp - trickLookbackNs)
         val (freefallStartIndex, freefallEndIndex) = getFreefallIndices(accelerometerCurrent, freefallThreshold)
         val (popStartIndex, popEndIndex) = getPopIndices(accelerometerCurrent, freefallStartIndex, freefallEndIndex)
         if(popStartIndex == -1 || popEndIndex == -1){
-            return Triple(0.0,0.0, 0.0)
+            return Rotation(0.0,0.0, 0.0)
         }
         val popStartTs = accelerometerCurrent[popStartIndex].timestamp
         val popEndTs = accelerometerCurrent[popEndIndex].timestamp
 
-        val rotations = computeRotations(gyroscopeCurrent, popStartTs, popEndTs)
-
-        return rotations
+        return computeRotations(gyroscopeCurrent, popStartTs, popEndTs)
 
     }
 
@@ -92,7 +97,7 @@ fun getFreefallIndices(acc :Array<SensorReading>, freefallThreshold: Double): Pa
 fun getPopIndices(acc: Array<SensorReading>, freefallStartIndex: Int, freefallEndIndex: Int) : Pair<Int, Int>{
     var popStart = -1
     var popEnd = -1
-    if (freefallStartIndex > -1 && freefallEndIndex > -1) {
+    if (freefallStartIndex > -1 && freefallEndIndex > 0) {
         var i = freefallStartIndex
         while (i >= 1 && popStart == -1) {
             val diff = acc[i].z - acc[i - 1].z
@@ -114,7 +119,7 @@ fun getPopIndices(acc: Array<SensorReading>, freefallStartIndex: Int, freefallEn
     return Pair(popStart, popEnd)
 }
 
-fun computeRotations(gyro: Array<SensorReading>, startTs: Long, endTs: Long) : Triple<Double, Double, Double>{
+fun computeRotations(gyro: Array<SensorReading>, startTs: Long, endTs: Long) : Rotation{
     var rotX = 0.0
     var rotY = 0.0
     var rotZ = 0.0
@@ -132,5 +137,5 @@ fun computeRotations(gyro: Array<SensorReading>, startTs: Long, endTs: Long) : T
         i += 1
         currentTs = nextR.timestamp
     }
-    return Triple(rotX, rotY, rotZ)
+    return Rotation(rotX, rotY, rotZ)
 }
