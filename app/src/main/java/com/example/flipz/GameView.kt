@@ -14,8 +14,6 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
     private val sensorRecord: SensorRecord
 
     private var lastRotation = Rotation(0.0, 0.0, 0.0)
-    private var lastTs = 0L
-    private var accSize = 0
 
     init {
 
@@ -56,9 +54,7 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
 
 
     fun update() {
-        lastTs = System.nanoTime()
-        accSize = sensorRecord.accelerometerData.size
-        val (x,y,z) = sensorRecord.detectTrick(lastTs)
+        val (x,y,z) = sensorRecord.detectTrick()
         if( x != 0.0 && y != 0.0 && z != 0.0) {
             lastRotation = Rotation(x,y,z)
         }
@@ -83,7 +79,6 @@ class GameView(context: Context) : SurfaceView(context), SurfaceHolder.Callback 
             canvas.drawText("$name: $distance", 40f, y, paint)
             y += 40
         }
-        canvas.drawText("${accSize}", 60f, 500f, paint)
 
     }
 }
