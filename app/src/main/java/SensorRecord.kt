@@ -30,7 +30,7 @@ class SensorRecord(context: Context) : SensorEventListener {
         sensorManager.unregisterListener(this)
     }
 
-    fun detectTrick(): Rotation {
+    fun detectRotation(): Rotation {
         // copy values of previous readings in the current readings to be processed
         val currentReadings = mutableListOf<SensorReading>()
         for(r in previousReadings){

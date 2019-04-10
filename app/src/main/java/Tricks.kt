@@ -16,6 +16,15 @@ val SHOVE_IT = Trick("Shove it", 0.0, 0.0, Math.PI)
 val FS_SHOVE_IT = Trick("FS Shove it",0.0, 0.0, -Math.PI)
 val TRICKS = arrayOf(KICKFLIP, HEELFLIP, SHOVE_IT, FS_SHOVE_IT)
 
+fun getTrick(r: Rotation) : Trick?{
+    for(t in TRICKS){
+        if(t.distanceTo(r) <= 1){
+            return t
+        }
+    }
+    return null
+}
+
 fun getTrickDistances(r: Rotation) : List<Pair<String, Double>> {
     return TRICKS.map{ t -> Pair(t.name, t.distanceTo(r)) }
 }
