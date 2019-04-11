@@ -26,6 +26,10 @@ class GameView(context: Context, private val screenWidth : Int, private val scre
         sensorRecord.stopRecording()
     }
 
+    fun resume(){
+        sensorRecord.startRecording()
+    }
+
 
     override fun surfaceCreated(surfaceHolder: SurfaceHolder) {
         sensorRecord.startRecording()
